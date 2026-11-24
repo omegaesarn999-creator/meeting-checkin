@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ผู้ดูแล — เช็คอินประชุม</title>
+<style>
+  :root { --ink:#14213d; --muted:#5b6478; --line:#dfe3ec; --bg:#f3f5fa; --card:#fff; --brand:#1f4fd8;
+          --ok:#0f8a4f; --okbg:#e3f6ec; --bad:#b42318;
+          --l1:#fef3c7; --l2:#fde68a; --l3:#fbbf24; --l4:#f59e0b;
+          --a1:#fecaca; --a2:#f87171; --a3:#991b1b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Noto Sans Thai","Leelawadee UI","Sukhumvit Set",Tahoma,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  .wrap { max-width:980px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.3rem; margin:6px 0 12px; }
+  h2 { font-size:1.1rem; margin:0 0 12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .hidden { display:none !important; }
+  button, select, input, textarea { font:inherit; }
+  button { cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:10px; padding:8px 14px; font-weight:600; }
+  button.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  button.danger { color:var(--bad); border-color:#f0c4bf; }
+  button.big { font-size:1.25rem; padding:18px 22px; width:100%; border-radius:14px; }
+  button.go { background:var(--ok); border-color:var(--ok); color:#fff; }
+  button.small { padding:4px 10px; font-size:.88rem; font-weight:500; }
+  input, textarea, select { border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:#fff; color:var(--ink); max-width:100%; }
+  textarea { width:100%; min-height:120px; }
+  label { display:block; font-size:.9rem; color:var(--muted); margin:10px 0 4px; }
+  .tabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:14px; }
+  .tabs button { white-space:nowrap; border-radius:999px; }
+  .tabs button.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .tile { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center; }
+  .tile b { display:block; font-size:1.7rem; font-variant-numeric:tabular-nums; }
+  .tile span { color:var(--muted); font-size:.85rem; }
+  .tablewrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; }
+  th, td { text-align:left; padding:8px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:600; font-size:.85rem; }
+  td.num, th.num { text-align:center; font-variant-numeric:tabular-nums; }
+  .chip { display:inline-block; min-width:2.2em; text-align:center; border-radius:999px; padding:2px 10px; font-weight:600; font-size:.88rem; background:#eef1f8; }
+  .st-ontime { background:var(--okbg); color:#0a5c35; } .st-late { background:var(--l2); color:#7c3a06; }
+  .st-absent { background:var(--a1); color:#7a1710; } .st-excused { background:#e0e7ff; color:#273a8a; }
+  .l0 { background:#eef1f8; color:var(--muted); } .l1 { background:var(--l1); } .l2 { background:var(--l2); } .l3 { background:var(--l3); } .l4 { background:var(--l4); }
+  .a0 { background:#eef1f8; color:var(--muted); } .a1 { background:var(--a1); } .a2 { background:var(--a2); color:#fff; } .a3 { background:var(--a3); color:#fff; }
+  .tl-g { background:#0b7a2f; color:#fff; } .tl-y { background:#f5c400; color:#3d2f00; } .tl-r { background:#c62828; color:#fff; } .tl-x { background:#8a8f98; color:#fff; }
+  .months { display:grid; grid-template-columns:repeat(auto-fill,minmax(52px,1fr)); gap:4px; }
+  .months div { border-radius:6px; text-align:center; padding:3px 0; font-weight:600; font-variant-numeric:tabular-nums; }
+  .months small { display:block; font-weight:400; font-size:.7rem; opacity:.9; }
+  tr.maxed td:first-child { box-shadow:inset 4px 0 0 var(--a3); font-weight:700; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:.85rem; color:var(--muted); margin-bottom:10px; align-items:center; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0 14px; }
+  .muted { color:var(--muted); font-size:.9rem; }
+  .top3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .top3 div { background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px; text-align:center; }
+  .top3 b { display:block; }
+  pre { white-space:pre-wrap; background:#f6f7fb; border:1px solid var(--line); border-radius:10px; padding:12px; font-family:inherit; font-size:.92rem; }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:999px; font-size:.95rem; z-index:9; max-width:90vw; }
+  #qr svg { width:260px; height:260px; max-width:100%; }
+  dialog { border:1px solid var(--line); border-radius:16px; padding:20px; width:min(640px, 94vw); max-height:92vh; color:var(--ink); }
+  dialog::backdrop { background:rgba(20,33,61,.45); }
+  dialog h3 { margin:18px 0 8px; font-size:1rem; }
+  .counts { display:grid; grid-template-columns:repeat(4,1fr); gap:0 12px; }
+  .counts input { width:100%; font-size:1.2rem; font-weight:600; text-align:center; }
+  @media (max-width:520px) { .counts { grid-template-columns:repeat(2,1fr); } }
+  ol { padding-left:20px; margin:6px 0; } ol li { margin-bottom:4px; }
+  code { background:#eef1f8; padding:1px 6px; border-radius:6px; word-break:break-all; }
+  @media (max-width:600px) { .tiles { grid-template-columns:repeat(2,1fr); } .top3 { grid-template-columns:1fr; } }
+  @media print { body * { visibility:hidden; } #qrcard, #qrcard * { visibility:visible; } #qrcard { position:absolute; left:0; top:0; width:100%; border:0; text-align:center; } #qrcard button { display:none; } #qr svg { width:420px; height:420px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="login" class="card" style="max-width:380px;margin:12vh auto">
+    <h1>ผู้ดูแลระบบเช็คอิน</h1>
+    <label for="user">ชื่อผู้ใช้</label>
+    <input type="text" id="user" style="width:100%" autocomplete="username" autocapitalize="none">
+    <label for="pass">รหัสผ่าน</label>
+    <input type="password" id="pass" style="width:100%" autocomplete="current-password">
+    <p class="muted hidden" id="setupNote" style="margin-top:10px">ระบบยังไม่มีผู้ดูแล — ตั้งชื่อผู้ใช้ (a-z, 0-9) และรหัสผ่าน (อย่างน้อย 8 ตัว) ของผู้ดูแลหลักคนแรก</p>
+    <div class="row" style="margin-top:12px"><button class="primary" id="loginBtn">เข้าสู่ระบบ</button><span class="muted" id="loginMsg"></span></div>
+  </section>
+
+  <div id="app" class="hidden">
+    <div class="row" style="justify-content:space-between"><h1 id="title">เช็คอินประชุม</h1><button class="small" id="logoutBtn">ออกจากระบบ</button></div>
+    <div class="tabs" id="tabs">
+      <button data-tab="today" class="on">วันนี้</button>
+      <button data-tab="stats">สรุปสะสม</button>
+      <button data-tab="history">ประวัติ</button>
+      <button data-tab="members">สมาชิก</button>
+      <button data-tab="settings">ตั้งค่า / QR / LINE</button>
+    </div>
+
+    <div id="tab-today"></div>
+    <div id="tab-stats" class="hidden"></div>
+    <div id="tab-history" class="hidden"></div>
+    <div id="tab-members" class="hidden"></div>
+    <div id="tab-settings" class="hidden"></div>
+  </div>
+</div>
+<dialog id="dlg"></dialog>
+<div id="toast" class="hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var TZ = "Asia/Bangkok", pass = null, D = null, A = null, needSetup = false, viewId = null, tab = "today", settingsDirty = false;
+  var ST = { ontime: "ตรงเวลา", late: "สาย", absent: "ขาด", excused: "ลา" };
+
+  function h(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    for (var k in (attrs || {})) {
+      if (k === "class") e.className = attrs[k];
+      else if (k.slice(0, 2) === "on") e[k] = attrs[k];
+      else if (k === "text") e.textContent = attrs[k];
+      else if (attrs[k] !== null && attrs[k] !== undefined && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+    }
+    [].concat(kids || []).forEach(function (c) { if (c !== null && c !== undefined && c !== false) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function hhmm(iso) { return iso ? new Date(iso).toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "-"; }
+  // สีตามเกณฑ์ BNI Traffic Lights: เขียว 70+, เหลือง 50-69, แดง 30-49, เทา ต่ำกว่า 30
+  function tl(s) { return s >= 70 ? "tl-g" : s >= 50 ? "tl-y" : s >= 30 ? "tl-r" : "tl-x"; }
+  function scoreChip(x) { return x.synced_at || +x.score ? h("span", { class: "chip " + tl(+x.score), text: (+x.score).toFixed(2) }) : h("span", { class: "muted", text: "-" }); }
+  // แปลงตารางที่คัดลอกจากหน้า Traffic Lights Evolution (วางเป็นข้อความคั่นด้วยแท็บ)
+  function parseBni(text) {
+    var lines = text.split(/\r?\n/).map(function (l) { return l.split("\t").map(function (c) { return c.trim(); }); });
+    var hi = -1; lines.forEach(function (c, i) { if (hi < 0 && c.some(function (x) { return /^\d\d\/\d\d$/.test(x); })) hi = i; });
+    if (hi < 0) return null;
+    var hd = lines[hi].filter(function (c, i) { return i > 0 || !/^member$/i.test(c); }); if (/^member$/i.test(hd[0])) hd.shift();
+    var out = [];
+    lines.slice(hi + 1).forEach(function (c) {
+      if (c.length < hd.length + 1 || !/[A-Za-zก-๙]/.test(c[0])) return;
+      var cells = c.slice(c.length - hd.length), row = { name: c[0].replace(/\s*\(.*\)\s*$/, ""), months: {} };
+      hd.forEach(function (k, i) {
+        var m = k.match(/^(\d\d)\/(\d\d)$/), v = cells[i];
+        if (m) { if (v !== "") row.months["20" + m[2] + "-" + m[1]] = +v; }
+        else if (/^avg/i.test(k)) row.avg = v; else if (/^visi/i.test(k)) row.visitors = v; else if (/^vis\/w/i.test(k)) row.vis_week = v; else if (/^spons/i.test(k)) row.sponsored = v;
+      });
+      out.push(row);
+    });
+    return out;
+  }
+  var toastT;
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.remove("hidden"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.add("hidden"); }, 3500); }
+  async function call(fn, args, okMsg) {
+    try {
+      var r = await mcRpc(fn, Object.assign({ p_pass: pass }, args || {}));
+      if (okMsg) toast(okMsg);
+      return r;
+    } catch (e) {
+      if (e.message === "bad_password") { logout("รหัสผ่านไม่ถูกต้อง"); } else toast("ผิดพลาด: " + e.message);
+      return null;
+    }
+  }
+  async function act(fn, args, okMsg) { var r = await call(fn, args, okMsg); if (r) await load(); return r; }
+  async function load() {
+    var r = await call("admin_dashboard", { p_meeting_id: viewId });
+    if (!r) return false;
+    D = r; $("title").textContent = D.settings.org_name; render(); return true;
+  }
+  function logout(msg) {
+    if (pass) mcRpc("admin_logout", { p_pass: pass }).catch(function () {});
+    pass = null; A = null; sessionStorage.removeItem("mc_token"); if ($("dlg").open) $("dlg").close();
+    $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("loginMsg").textContent = msg === "รหัสผ่านไม่ถูกต้อง" ? "หมดเวลาเข้าสู่ระบบ กรุณาเข้าใหม่" : (msg || "");
+  }
+  // pass = โทเคนเข้าสู่ระบบ (อายุ 12 ชั่วโมง) ไม่ได้เก็บรหัสผ่านจริงไว้ในเครื่อง
+  async function enter(token) {
+    pass = token;
+    try { D = await mcRpc("admin_dashboard", { p_pass: pass, p_meeting_id: null }); A = await mcRpc("admin_list_admins", { p_pass: pass }); }
+    catch (e) { pass = null; sessionStorage.removeItem("mc_token"); $("loginMsg").textContent = e.message === "bad_password" ? "กรุณาเข้าสู่ระบบ" : e.message; return; }
+    sessionStorage.setItem("mc_token", pass);
+    $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("loginMsg").textContent = ""; $("pass").value = "";
+    $("title").textContent = D.settings.org_name; render();
+  }
+  async function login() {
+    $("loginMsg").textContent = "กำลังตรวจสอบ…";
+    try {
+      if (needSetup) { await mcRpc("admin_setup", { p_user: $("user").value, p_password: $("pass").value }); needSetup = false; $("setupNote").classList.add("hidden"); $("loginBtn").textContent = "เข้าสู่ระบบ"; }
+      var r = await mcRpc("admin_login", { p_user: $("user").value, p_password: $("pass").value }); await enter(r.token);
+    }
+    catch (e) { $("loginMsg").textContent = e.message === "bad_password" ? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" : e.message; }
+  }
+  async function loadAdmins() { var r = await call("admin_list_admins"); if (r) { A = r; settingsDirty = false; renderSettings(); } }
+
+  // ---------- หน้าต่างแก้ข้อมูลรายคน
+  async function openMember(id) {
+    var r = await call("admin_member_detail", { p_member_id: id }); if (!r || !r.member) return;
+    var m = r.member, s = D.settings, dlg = $("dlg"); dlg.textContent = "";
+    function num(idn, label, val, step) { return h("div", {}, [h("label", { for: idn, text: label }), h("input", { id: idn, type: "number", min: step ? null : 0, step: step || 1, value: val })]); }
+    var name = h("input", { id: "m_name", value: m.name, style: "width:100%" });
+    var active = h("input", { id: "m_active", type: "checkbox" }); active.checked = m.active;
+    var note = h("input", { id: "m_note", value: m.note || "", style: "width:100%", placeholder: "เช่น ยอดยกมาจากสมุดเซ็นชื่อ" });
+    dlg.appendChild(h("div", {}, [
+      h("div", { class: "row", style: "justify-content:space-between" }, [h("h2", { text: "แก้ข้อมูลสมาชิก", style: "margin:0" }), h("button", { class: "small", text: "ปิด", onclick: function () { dlg.close(); } })]),
+      h("label", { for: "m_name", text: "ชื่อ" }), name,
+      h("h3", { text: "ยอดสะสม (แก้ตัวเลขได้โดยตรง)" }),
+      h("div", { class: "counts" }, [num("m_late", "มาสาย (ครั้ง)", m.late), num("m_absent", "ขาด (ครั้ง)", m.absent), num("m_exc", "ลา (ครั้ง)", m.excused), num("m_score", "คะแนน", m.score, "any")]),
+      h("p", { class: "muted", style: "margin:8px 0 0", text: "ตอนนี้: สาย " + m.late + " ครั้ง = ขาด " + m.late_conv + " (เหลือ " + m.late_rem + "/" + s.late_per_absence + ") · ขาดรวม " + m.total_absent + "/" + s.absence_limit + (m.maxed ? " 🚨 ถึงโทษสูงสุด" : "") + " · ช่องคะแนนเตรียมไว้เชื่อมกับเว็บไซต์ภายหลัง" }),
+      (m.months && m.months.length) ? h("div", {}, [
+        h("h3", { text: "คะแนน BNI Traffic Lights รายเดือน" }),
+        h("div", { class: "months" }, m.months.map(function (x) { return h("div", { class: tl(x.s) }, [String(x.s), h("small", { text: x.m })]); })),
+        h("p", { class: "muted", style: "margin:8px 0 0", text: "Visitor 12 เดือน: " + (m.visitors === null ? "-" : m.visitors) + " · Sponsor: " + (m.sponsored === null ? "-" : m.sponsored) + " · ช่องคะแนนด้านบน = ค่าเฉลี่ยจาก BNI และจะถูกเขียนทับเมื่อนำเข้ารอบใหม่" })]) : null,
+      h("label", { for: "m_note", text: "หมายเหตุ" }), note,
+      h("label", { style: "display:flex;gap:8px;align-items:center;color:inherit;font-size:1rem" }, [active, "ยังเป็นสมาชิกอยู่ (ถ้าเอาออก จะไม่ถูกนับขาดอีก แต่ประวัติยังอยู่)"]),
+      h("div", { class: "row", style: "margin-top:14px" }, [
+        h("button", { class: "primary", text: "บันทึก", onclick: async function () {
+          var ok = await call("admin_save_member", { p_member_id: id, p_name: name.value, p_active: active.checked, p_late: +$("m_late").value, p_absent: +$("m_absent").value, p_excused: +$("m_exc").value, p_score: +$("m_score").value, p_note: note.value }, "บันทึกแล้ว");
+          if (ok) { dlg.close(); load(); }
+        } }),
+        m.bound ? h("button", { text: "รีเซ็ตมือถือ", onclick: async function () { if (confirm("รีเซ็ตการผูกมือถือของ " + m.name + "?\nเขาจะต้องเลือกชื่อใหม่ในการสแกนครั้งถัดไป")) { if (await call("admin_reset_device", { p_member_id: id }, "รีเซ็ตแล้ว")) { load(); openMember(id); } } } }) : h("span", { class: "muted", text: "ยังไม่ได้ผูกมือถือ" })]),
+      h("h3", { text: "ประวัติรายครั้ง (" + r.history.length + ")" }),
+      r.history.length ? h("div", { class: "tablewrap" }, [h("table", {}, [h("tbody", {}, r.history.map(function (x) {
+        var sel = h("select", { "aria-label": "แก้สถานะ" }, Object.keys(ST).map(function (k) { return h("option", { value: k, text: ST[k], selected: k === x.status ? "selected" : null }); }));
+        sel.onchange = async function () { if (await call("admin_set_attendance", { p_meeting_id: x.meeting_id, p_member_id: id, p_status: sel.value }, "บันทึกแล้ว")) { load(); openMember(id); } };
+        return h("tr", {}, [h("td", { text: x.date_text }), h("td", { text: x.checked_at ? hhmm(x.checked_at).slice(0, 5) + " น." : "-" }), h("td", {}, [sel])]);
+      }))])]) : h("p", { class: "muted", text: "ยังไม่มีประวัติการประชุม" })
+    ]));
+    if (!dlg.open) dlg.showModal();
+  }
+  async function watchLine(r) {
+    if (!r) return;
+    if (!r.line_request) { toast("ยังไม่ได้ส่ง LINE — ตั้งค่า LINE ให้ครบก่อน (แท็บตั้งค่า)"); return; }
+    for (var i = 0; i < 8; i++) {
+      await new Promise(function (ok) { setTimeout(ok, 1500); });
+      var s = await call("admin_line_result", { p_request: r.line_request });
+      if (s && s.done) { toast(s.status === 200 ? "ส่งเข้า LINE สำเร็จ ✅" : "LINE ตอบกลับผิดพลาด (" + (s.status || s.error) + ") " + (s.body || "")); return; }
+    }
+    toast("ส่งคำขอไปยัง LINE แล้ว กรุณาตรวจในกลุ่ม");
+  }
+
+  // ---------- วันนี้ / รายละเอียดรอบประชุม
+  function statusSelect(memberId, current) {
+    var sel = h("select", { "aria-label": "แก้สถานะ" }, [h("option", { value: "", text: current ? "แก้ไข…" : "บันทึกเป็น…" })]
+      .concat(Object.keys(ST).map(function (k) { return h("option", { value: k, text: ST[k] }); }))
+      .concat(current ? [h("option", { value: "clear", text: "ลบรายการ" })] : []));
+    sel.onchange = function () { if (sel.value) act("admin_set_attendance", { p_meeting_id: D.meeting.id, p_member_id: memberId, p_status: sel.value }, "บันทึกแล้ว"); };
+    return sel;
+  }
+  function renderToday() {
+    var box = $("tab-today"), m = D.meeting, kids = [];
+    box.textContent = "";
+    if (viewId) kids.push(h("div", { class: "row", style: "margin-bottom:10px" }, [h("button", { class: "small", text: "← กลับไปวันนี้", onclick: function () { viewId = null; load(); } })]));
+    if (!m) {
+      kids.push(h("div", { class: "card" }, [
+        h("h2", { text: "วัน" + D.today_text }),
+        h("p", { class: "muted", text: D.is_meeting_day ? "ยังไม่มีใครเช็คอิน รอบประชุมจะถูกสร้างเมื่อมีคนสแกนคนแรก หรือเมื่อกดเปิดประชุม" : "วันนี้ไม่ใช่วันประชุมตามกำหนด — สร้างรอบพิเศษเพื่อทดสอบระบบหรือประชุมนอกรอบได้ (รอบพิเศษไม่ปิดอัตโนมัติ ต้องกดปิดรอบเอง)" }),
+        h("div", { class: "row" }, [
+          h("button", { class: "primary", text: D.is_meeting_day ? "เริ่มรอบประชุมวันนี้" : "สร้างรอบพิเศษวันนี้", onclick: function () { act("admin_create_today", {}, "สร้างรอบแล้ว"); } })])
+      ]));
+      kids.forEach(function (k) { box.appendChild(k); }); return;
+    }
+    var rows = D.rows, on = 0, late = 0, abs = 0, exc = 0;
+    rows.forEach(function (r) { if (r.status === "ontime") on++; else if (r.status === "late") late++; else if (r.status === "absent") abs++; else exc++; });
+    var open = !m.finalized_at;
+
+    var head = h("div", { class: "card" }, [
+      h("h2", { text: "วัน" + m.date_text + (m.is_special ? " (รอบพิเศษ)" : "") }),
+      h("p", { class: "muted", text:
+        (m.scheduled_start ? "เริ่มตามกำหนด " + hhmm(m.scheduled_start).slice(0, 5) + " น. · " : "") +
+        (m.opened_at ? "กดเปิดประชุมเมื่อ " + hhmm(m.opened_at) + " น. · " : "ยังไม่ได้กดเปิดประชุม · ") +
+        (m.finalized_at ? (m.cancelled ? "ปิดรอบแล้ว (งดประชุม — ไม่มีผู้เช็คอิน)" : "ปิดรอบแล้ว " + hhmm(m.finalized_at) + " น.") : (m.report_at ? "ปิดรับและส่งรายงานอัตโนมัติ " + hhmm(m.report_at).slice(0, 5) + " น." : "ต้องกดปิดรอบเอง")) +
+        (m.report_sent_at ? " · ส่ง LINE แล้ว" : "") })
+    ]);
+    if (open && !m.opened_at) head.appendChild(h("button", { class: "big go", text: "▶ เปิดประชุม (หลังจากนี้นับเป็นมาสาย)", onclick: function () { if (confirm("ยืนยันเปิดประชุมตอนนี้?\nคนที่สแกนหลังจากนี้จะนับเป็นมาสาย")) act("admin_open_meeting", {}, "เปิดประชุมแล้ว"); } }));
+    var actions = h("div", { class: "row", style: "margin-top:12px" });
+    if (open && m.opened_at) actions.appendChild(h("button", { class: "small", text: "ยกเลิกการกดเปิดประชุม", onclick: function () { if (confirm("ยกเลิกการกดเปิดประชุม และคำนวณสถานะสายใหม่?")) act("admin_undo_open", { p_meeting_id: m.id }, "ยกเลิกแล้ว"); } }));
+    if (open) actions.appendChild(h("button", { text: "ปิดรอบและส่งรายงานตอนนี้", onclick: async function () { if (confirm("ปิดรอบตอนนี้?\nคนที่ยังไม่เช็คอินจะถูกบันทึกเป็น “ขาด” และส่งรายงานเข้า LINE")) watchLine(await act("admin_finalize", { p_meeting_id: m.id, p_send: true }, "ปิดรอบแล้ว")); } }));
+    if (!open) actions.appendChild(h("button", { text: "ส่งรายงานเข้า LINE อีกครั้ง", onclick: async function () { watchLine(await act("admin_send_report", { p_meeting_id: m.id })); } }));
+    actions.appendChild(h("button", { text: "ดูตัวอย่างรายงาน", onclick: async function () { var t = await call("admin_report_preview", { p_meeting_id: m.id }); if (t) { $("preview").textContent = t; $("previewCard").classList.remove("hidden"); } } }));
+    actions.appendChild(h("button", { class: "small danger", text: "ลบรอบนี้", onclick: function () { if (confirm("ลบรอบประชุมนี้พร้อมข้อมูลเช็คอินทั้งหมดของรอบ?\nการลบย้อนกลับไม่ได้")) { var id = m.id; viewId = null; act("admin_delete_meeting", { p_meeting_id: id }, "ลบแล้ว"); } } }));
+    head.appendChild(actions);
+    kids.push(head);
+    kids.push(h("div", { id: "previewCard", class: "card hidden" }, [h("h2", { text: "ตัวอย่างรายงาน LINE" }), h("pre", { id: "preview" })]));
+
+    kids.push(h("div", { class: "tiles" }, [
+      h("div", { class: "tile" }, [h("b", { text: String(on + late) }), h("span", { text: "มาแล้ว" })]),
+      h("div", { class: "tile" }, [h("b", { text: String(on) }), h("span", { text: "ตรงเวลา" })]),
+      h("div", { class: "tile" }, [h("b", { text: String(late) }), h("span", { text: "มาสาย" })]),
+      h("div", { class: "tile" }, [h("b", { text: String(open ? D.pending.length : abs) }), h("span", { text: open ? "ยังไม่มา" : "ขาด" })])
+    ]));
+
+    var checked = rows.filter(function (r) { return r.checked_at && (r.status === "ontime" || r.status === "late"); });
+    kids.push(h("div", { class: "card" }, [h("h2", { text: "🏆 มาเช้าสุด 3 อันดับแรก" }),
+      checked.length ? h("div", { class: "top3" }, checked.slice(0, 3).map(function (r, i) { return h("div", {}, [h("b", { text: ["🥇", "🥈", "🥉"][i] + " " + r.name }), hhmm(r.checked_at) + " น."]); })) : h("p", { class: "muted", text: "ยังไม่มีผู้เช็คอิน" })]));
+
+    var n = 0;
+    kids.push(h("div", { class: "card" }, [h("h2", { text: "รายการเช็คอิน (" + rows.length + ")" }), h("div", { class: "tablewrap" }, [h("table", {}, [
+      h("thead", {}, [h("tr", {}, ["#", "ชื่อ", "เวลา", "สถานะ", "ห่าง (ม.)", "แก้ไข"].map(function (t) { return h("th", { text: t }); }))]),
+      h("tbody", {}, rows.map(function (r) {
+        return h("tr", {}, [
+          h("td", { class: "num", text: r.checked_at ? String(++n) : "" }), h("td", { text: r.name }), h("td", { text: r.checked_at ? hhmm(r.checked_at) : "-" }),
+          h("td", {}, [h("span", { class: "chip st-" + r.status, text: ST[r.status] + (r.status === "late" && r.late_minutes ? " " + r.late_minutes + " นาที" : "") }), r.edited ? " ✎" : ""]),
+          h("td", { class: "num", text: r.distance_m === null ? "-" : String(r.distance_m) }),
+          h("td", {}, [statusSelect(r.member_id, r.status)])]);
+      }))])])]));
+
+    if (D.pending.length) kids.push(h("div", { class: "card" }, [h("h2", { text: (open ? "ยังไม่เช็คอิน (" : "ไม่มีรายการ (") + D.pending.length + ")" }), h("div", { class: "tablewrap" }, [h("table", {}, [
+      h("tbody", {}, D.pending.map(function (p) { return h("tr", {}, [h("td", { text: p.name }), h("td", {}, [statusSelect(p.member_id, null)])]); }))])])]));
+    kids.forEach(function (k) { box.appendChild(k); });
+  }
+
+  // ---------- สรุปสะสม
+  function renderStats() {
+    var box = $("tab-stats"), s = D.settings; box.textContent = "";
+    var list = D.stats.filter(function (x) { return x.active; }).sort(function (a, b) { return b.total_absent - a.total_absent || b.late_rem - a.late_rem || b.late - a.late || a.name.localeCompare(b.name, "th"); });
+    function lc(x) { return "l" + Math.min(4, Math.ceil(x.late_rem * 4 / Math.max(1, s.late_per_absence - 1))); }
+    function ac(x) { return x.total_absent <= 0 ? "a0" : x.total_absent >= s.absence_limit ? "a3" : x.total_absent >= s.absence_limit - 1 ? "a2" : "a1"; }
+    box.appendChild(h("div", { class: "card" }, [
+      h("h2", { text: "สรุปสะสมรายคน" + (s.count_from ? " (นับตั้งแต่ " + s.count_from + ")" : "") }),
+      h("p", { class: "muted", text: "กติกา: สาย " + s.late_per_absence + " ครั้ง = ขาด 1 ครั้ง · ขาดรวมครบ " + s.absence_limit + " ครั้ง = โทษสูงสุด" }),
+      h("div", { class: "legend" }, [
+        "สายรอบปัจจุบัน:", h("span", { class: "chip l1", text: "น้อย" }), h("span", { class: "chip l2", text: " " }), h("span", { class: "chip l3", text: " " }), h("span", { class: "chip l4", text: "ใกล้ครบ" }),
+        "ขาดรวม:", h("span", { class: "chip a1", text: "1" }), h("span", { class: "chip a2", text: "ใกล้ครบ" }), h("span", { class: "chip a3", text: "โทษสูงสุด" })]),
+      h("div", { class: "tablewrap" }, [h("table", {}, [
+        h("thead", {}, [h("tr", {}, [h("th", { text: "ชื่อ" })].concat(["ตรงเวลา", "สายทั้งหมด", "สายรอบนี้", "ขาดจริง", "ขาดจากสาย", "ขาดรวม", "ติดท็อป 3", "ลา", "คะแนน", ""].map(function (t) { return h("th", { class: "num", text: t }); })))]),
+        h("tbody", {}, list.map(function (x) {
+          return h("tr", { class: x.maxed ? "maxed" : "" }, [
+            h("td", { text: (x.maxed ? "🚨 " : "") + x.name }),
+            h("td", { class: "num", text: String(x.ontime) }), h("td", { class: "num", text: String(x.late) }),
+            h("td", { class: "num" }, [h("span", { class: "chip " + lc(x), text: x.late_rem + "/" + s.late_per_absence })]),
+            h("td", { class: "num", text: String(x.absent) }), h("td", { class: "num", text: String(x.late_conv) }),
+            h("td", { class: "num" }, [h("span", { class: "chip " + ac(x), text: x.total_absent + "/" + s.absence_limit })]),
+            h("td", { class: "num", text: x.top3 ? "🏆 " + x.top3 : "-" }),
+            h("td", { class: "num", text: String(x.excused) }), h("td", { class: "num" }, [scoreChip(x)]),
+            h("td", {}, [h("button", { class: "small", text: "แก้ไข", onclick: function () { openMember(x.id); } })])]);
+        }))])])]));
+  }
+
+  // ---------- ประวัติ
+  function renderHistory() {
+    var box = $("tab-history"); box.textContent = "";
+    box.appendChild(h("div", { class: "card" }, [h("h2", { text: "ประวัติการประชุม" }),
+      D.meetings.length ? h("div", { class: "tablewrap" }, [h("table", {}, [
+        h("thead", {}, [h("tr", {}, [h("th", { text: "วันที่" })].concat(["ตรงเวลา", "สาย", "ขาด", "ลา"].map(function (t) { return h("th", { class: "num", text: t }); })).concat([h("th", { text: "สถานะ" }), h("th", {})]))]),
+        h("tbody", {}, D.meetings.map(function (m) {
+          return h("tr", {}, [h("td", { text: m.date_text + (m.is_special ? " (พิเศษ)" : "") }),
+            h("td", { class: "num", text: String(m.ontime) }), h("td", { class: "num", text: String(m.late) }), h("td", { class: "num", text: String(m.absent) }), h("td", { class: "num", text: String(m.excused) }),
+            h("td", { text: m.cancelled ? "งดประชุม" : m.finalized ? "ปิดรอบแล้ว" : "กำลังเปิด" }),
+            h("td", {}, [h("button", { class: "small", text: "ดู / แก้ไข", onclick: function () { viewId = m.id; setTab("today"); load(); } })])]);
+        }))])]) : h("p", { class: "muted", text: "ยังไม่มีข้อมูล" })]));
+  }
+
+  // ---------- สมาชิก
+  function renderMembers() {
+    var box = $("tab-members"); box.textContent = "";
+    var ta = h("textarea", { placeholder: "วางรายชื่อ บรรทัดละ 1 คน", "aria-label": "รายชื่อสมาชิกใหม่" });
+    var all = D.stats.slice().sort(function (a, b) { return (b.active - a.active) || a.name.localeCompare(b.name, "th"); });
+    var one = h("input", { id: "newMember", placeholder: "ชื่อสมาชิกใหม่", "aria-label": "ชื่อสมาชิกใหม่", style: "flex:1;min-width:200px" });
+    async function addOne() { var n = one.value.trim(); if (!n) return toast("กรุณาใส่ชื่อ"); var r = await act("admin_add_members", { p_names: [n] }); if (r) toast(r.added ? "เพิ่ม " + n + " แล้ว" : "มีชื่อนี้อยู่แล้ว"); }
+    one.onkeydown = function (e) { if (e.key === "Enter") addOne(); };
+    box.appendChild(h("div", { class: "card" }, [h("h2", { text: "เพิ่มสมาชิก" }),
+      h("div", { class: "row" }, [one, h("button", { class: "primary", text: "+ เพิ่มสมาชิก", onclick: addOne })]),
+      h("label", { text: "หรือเพิ่มทีละหลายคน" }), ta,
+      h("div", { class: "row", style: "margin-top:10px" }, [h("button", { text: "เพิ่มรายชื่อทั้งหมด", onclick: async function () {
+        var names = ta.value.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+        if (!names.length) return toast("ยังไม่ได้ใส่รายชื่อ");
+        var r = await act("admin_add_members", { p_names: names }); if (r) toast("เพิ่มแล้ว " + r.added + " คน" + (r.added < names.length ? " (ชื่อซ้ำถูกข้าม)" : ""));
+      } }), h("span", { class: "muted", text: "ชื่อซ้ำจะถูกข้ามอัตโนมัติ" })])]));
+    var bta = h("textarea", { placeholder: "วางตารางที่คัดลอกจากหน้า Traffic Lights Evolution ที่นี่", "aria-label": "ข้อมูลคะแนน BNI" });
+    var last = D.stats.map(function (x) { return x.synced_at; }).filter(Boolean).sort().pop();
+    box.appendChild(h("div", { class: "card" }, [h("h2", { text: "นำเข้าคะแนน BNI (Traffic Lights)" }),
+      h("p", { class: "muted", text: (last ? "อัปเดตล่าสุด " + new Date(last).toLocaleDateString("th-TH", { timeZone: TZ, dateStyle: "medium" }) + " · " : "") + "วิธีใช้: เปิดหน้า Traffic Lights Evolution ใน Reporting2You เลือกแสดง All แล้วลากคลุมทั้งตาราง (รวมหัวตาราง) คัดลอกมาวาง คะแนนของ BNI เปลี่ยนเดือนละครั้งเมื่อปิดเดือน" }),
+      bta,
+      h("div", { class: "row", style: "margin-top:10px" }, [h("button", { class: "primary", text: "นำเข้าคะแนน", onclick: async function () {
+        var rows = parseBni(bta.value);
+        if (!rows || !rows.length) return toast("อ่านตารางไม่ได้ ต้องคัดลอกให้รวมแถวหัวตาราง (11/25, 12/25, …)");
+        var r = await act("admin_import_bni", { p_rows: rows });
+        if (r) toast("อัปเดต " + r.updated + " คน" + (r.missing.length ? " · ไม่พบชื่อในระบบ: " + r.missing.join(", ") : ""));
+      } })])]));
+    box.appendChild(h("div", { class: "card" }, [
+      h("h2", { text: "สมาชิกทั้งหมด ("+ all.filter(function (x) { return x.active; }).length + " คนที่ใช้งาน)" }),
+      h("div", { class: "tablewrap" }, [h("table", {}, [
+        h("thead", {}, [h("tr", {}, [h("th", { text: "ชื่อ" })].concat(["สาย", "ขาด", "ลา", "คะแนน"].map(function (t) { return h("th", { class: "num", text: t }); })).concat([h("th", { text: "มือถือ" }), h("th", { text: "สถานะ" }), h("th", {})]))]),
+        h("tbody", {}, all.map(function (x) {
+          return h("tr", {}, [h("td", { text: x.name }),
+            h("td", { class: "num", text: String(x.late) }), h("td", { class: "num", text: String(x.absent) }), h("td", { class: "num", text: String(x.excused) }), h("td", { class: "num" }, [scoreChip(x)]),
+            h("td", {}, [x.bound ? h("span", { class: "chip st-ontime", text: "ผูกแล้ว" }) : h("span", { class: "chip", text: "ยังไม่ผูก" })]),
+            h("td", { text: x.active ? "ใช้งาน" : "ปิดใช้งาน" }),
+            h("td", {}, [h("button", { class: "small primary", text: "แก้ข้อมูล", onclick: function () { openMember(x.id); } })])]);
+        }))])])]));
+  }
+
+  // ---------- ตั้งค่า
+  function renderSettings() {
+    var box = $("tab-settings"), s = D.settings; box.textContent = ""; settingsDirty = false;
+    function f(id, label, type, val, extra) { return h("div", {}, [h("label", { for: id, text: label }), h("input", Object.assign({ id: id, type: type, value: val === null || val === undefined ? "" : val, style: "width:100%" }, extra || {}))]); }
+    var days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+    var dow = h("select", { id: "s_dow", style: "width:100%" }, days.map(function (d, i) { return h("option", { value: i, text: d, selected: i === s.meeting_dow ? "selected" : null }); }));
+    var card = h("div", { class: "card", oninput: function () { settingsDirty = true; } }, [
+      h("h2", { text: "ตั้งค่าการประชุม" }),
+      h("div", { class: "grid2" }, [
+        f("s_org", "ชื่อการประชุม", "text", s.org_name),
+        h("div", {}, [h("label", { for: "s_dow", text: "วันประชุมประจำสัปดาห์" }), dow]),
+        f("s_open", "เริ่มสแกนได้ตั้งแต่", "time", s.checkin_open_time),
+        f("s_start", "เวลาเริ่มประชุม (หลังจากนี้ = สาย)", "time", s.start_time),
+        f("s_report", "เวลาปิดรับ + ส่งรายงาน", "time", s.report_time),
+        f("s_lpa", "สายกี่ครั้ง = ขาด 1 ครั้ง", "number", s.late_per_absence, { min: 1 }),
+        f("s_lim", "ขาดกี่ครั้ง = โทษสูงสุด", "number", s.absence_limit, { min: 1 }),
+        f("s_from", "เริ่มนับสะสมตั้งแต่วันที่ (เว้นว่าง = ทั้งหมด)", "date", s.count_from)]),
+      h("h2", { text: "ตำแหน่งที่ประชุม (ล็อกโลเคชั่น)", style: "margin-top:20px" }),
+      h("p", { class: "muted", text: s.site_lat === null ? "⚠️ ยังไม่ได้กำหนดตำแหน่ง — ตอนนี้เช็คอินได้จากทุกที่" : "กำหนดแล้ว — ต้องอยู่ในรัศมีจึงจะเช็คอินได้" }),
+      h("div", { class: "grid2" }, [
+        f("s_lat", "ละติจูด", "number", s.site_lat, { step: "any" }), f("s_lng", "ลองจิจูด", "number", s.site_lng, { step: "any" }),
+        f("s_rad", "รัศมีที่อนุญาต (เมตร)", "number", s.radius_m, { min: 20 })]),
+      h("div", { class: "row", style: "margin-top:12px" }, [
+        h("button", { text: "📍 ใช้ตำแหน่งปัจจุบันของฉัน", onclick: function () {
+          if (!navigator.geolocation) return toast("อุปกรณ์นี้ไม่รองรับการระบุตำแหน่ง");
+          toast("กำลังหาตำแหน่ง…");
+          navigator.geolocation.getCurrentPosition(function (p) { $("s_lat").value = p.coords.latitude.toFixed(6); $("s_lng").value = p.coords.longitude.toFixed(6); settingsDirty = true; toast("ได้ตำแหน่งแล้ว (คลาดเคลื่อน ±" + Math.round(p.coords.accuracy) + " ม.) — อย่าลืมกดบันทึก"); },
+            function () { toast("หาตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง"); }, { enableHighAccuracy: true, timeout: 20000 });
+        } }),
+        h("button", { class: "small", text: "ดูบนแผนที่", onclick: function () { if ($("s_lat").value) window.open("https://www.google.com/maps?q=" + $("s_lat").value + "," + $("s_lng").value, "_blank", "noopener"); } })]),
+      h("div", { class: "row", style: "margin-top:16px" }, [h("button", { class: "primary", text: "บันทึกการตั้งค่า", onclick: async function () {
+        var lat = $("s_lat").value, lng = $("s_lng").value;
+        if ((lat === "") !== (lng === "")) return toast("กรุณาใส่ทั้งละติจูดและลองจิจูด");
+        await act("admin_save_settings", { p: { org_name: $("s_org").value, meeting_dow: +$("s_dow").value, checkin_open_time: $("s_open").value, start_time: $("s_start").value, report_time: $("s_report").value,
+          late_per_absence: +$("s_lpa").value, absence_limit: +$("s_lim").value, count_from: $("s_from").value,
+          site_lat: lat === "" ? null : +lat, site_lng: lng === "" ? null : +lng, radius_m: +$("s_rad").value } }, "บันทึกแล้ว");
+      } }), h("span", { class: "muted", text: "การเปลี่ยนเวลามีผลกับรอบประชุมถัดไป" })])
+    ]);
+    box.appendChild(card);
+
+    var url = location.href.replace(/admin\.html.*$/, "") + "?openExternalBrowser=1";
+    var qrBox = h("div", { id: "qr" });
+    try { var q = qrcode(0, "M"); q.addData(url); q.make(); qrBox.innerHTML = q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }); } catch (e) { qrBox.textContent = "สร้าง QR ไม่ได้"; }
+    box.appendChild(h("div", { class: "card", id: "qrcard" }, [h("h2", { text: "QR Code สำหรับเช็คอิน — " + s.org_name }), qrBox,
+      h("p", { class: "muted", text: "สแกนด้วยกล้องมือถือ · " + url }),
+      h("button", { text: "🖨 พิมพ์ QR", onclick: function () { window.print(); } })]));
+
+    var hook = MC_CONFIG.url + "/functions/v1/mc-line-webhook";
+    box.appendChild(h("div", { class: "card", oninput: function () { settingsDirty = true; } }, [
+      h("h2", { text: "แจ้งเตือน LINE กลุ่ม" }),
+      h("p", { class: "muted", text: "สถานะ: Token " + (s.line_token_set ? "✅" : "❌") + " · Secret " + (s.line_secret_set ? "✅" : "❌") + " · กลุ่ม " + (s.line_group_set ? "✅ ลงทะเบียนแล้ว" : "❌ ยังไม่ลงทะเบียน") }),
+      h("ol", {}, [
+        h("li", { text: "สร้าง LINE Official Account (ฟรี) ที่ manager.line.biz แล้วเปิดใช้ Messaging API ในเมนู ตั้งค่า" }),
+        h("li", { text: "ที่ developers.line.biz เปิด Channel ของบัญชีนั้น คัดลอก Channel secret (แท็บ Basic settings) และกดออก Channel access token (แท็บ Messaging API) มาวางด้านล่าง แล้วกดบันทึก" }),
+        h("li", {}, ["ในแท็บ Messaging API ตั้ง Webhook URL เป็น ", h("code", { text: hook }), " แล้วเปิด Use webhook"]),
+        h("li", { text: "ใน manager.line.biz > ตั้งค่า > ตั้งค่าบัญชี เปิด “อนุญาตให้เข้าร่วมกลุ่ม” แล้วเชิญบอทเข้ากลุ่ม LINE ของทีม" }),
+        h("li", { text: "พิมพ์คำว่า ลงทะเบียนกลุ่ม ในกลุ่มนั้น บอทจะตอบยืนยัน แล้วกดปุ่มทดสอบด้านล่าง" })]),
+      h("div", { class: "grid2" }, [f("s_tok", "Channel access token", "password", "", { placeholder: s.line_token_set ? "(ตั้งค่าแล้ว — เว้นว่างเพื่อคงเดิม)" : "", autocomplete: "off" }),
+        f("s_sec", "Channel secret", "password", "", { placeholder: s.line_secret_set ? "(ตั้งค่าแล้ว — เว้นว่างเพื่อคงเดิม)" : "", autocomplete: "off" })]),
+      h("div", { class: "row", style: "margin-top:12px" }, [
+        h("button", { class: "primary", text: "บันทึก LINE", onclick: function () { act("admin_save_settings", { p: { line_token: $("s_tok").value, line_secret: $("s_sec").value } }, "บันทึกแล้ว"); } }),
+        h("button", { text: "ส่งข้อความทดสอบ", onclick: async function () { watchLine(await call("admin_line_test")); } })])
+    ]));
+
+    var me = (A && A.me) || {}, admins = (A && A.admins) || [];
+    var ownerChk = h("input", { id: "a_owner", type: "checkbox" });
+    box.appendChild(h("div", { class: "card", oninput: function () { settingsDirty = true; } }, [
+      h("h2", { text: "ผู้ดูแลระบบ" }),
+      h("p", { class: "muted", text: "คุณเข้าระบบในชื่อ " + (me.username || "-") + (me.is_owner ? " (ผู้ดูแลหลัก)" : "") + " · ผู้ดูแลทุกคนแก้ข้อมูลได้ ส่วนการเพิ่ม/ลบผู้ดูแลทำได้เฉพาะผู้ดูแลหลัก" }),
+      h("div", { class: "tablewrap" }, [h("table", {}, [h("tbody", {}, admins.map(function (a) {
+        return h("tr", {}, [h("td", { text: a.username + (a.id === me.id ? " (คุณ)" : "") }), h("td", { text: a.is_owner ? "ผู้ดูแลหลัก" : "ผู้ดูแล" }),
+          h("td", {}, [me.is_owner && a.id !== me.id ? h("div", { class: "row" }, [
+            h("button", { class: "small", text: "ตั้งรหัสผ่านใหม่", onclick: async function () { var np = prompt("รหัสผ่านใหม่ของ " + a.username + " (อย่างน้อย 8 ตัว)"); if (np && await call("admin_reset_admin_password", { p_admin_id: a.id, p_new: np }, "ตั้งรหัสผ่านใหม่แล้ว")) loadAdmins(); } }),
+            h("button", { class: "small danger", text: "ลบ", onclick: async function () { if (confirm("ลบผู้ดูแล " + a.username + "?") && await call("admin_remove_admin", { p_admin_id: a.id }, "ลบแล้ว")) loadAdmins(); } })]) : null])]);
+      }))])]),
+      me.is_owner ? h("div", {}, [
+        h("div", { class: "grid2" }, [f("a_user", "ชื่อผู้ใช้ของผู้ดูแลใหม่ (a-z, 0-9)", "text", "", { autocomplete: "off", autocapitalize: "none" }), f("a_pw", "รหัสผ่าน (อย่างน้อย 8 ตัว)", "password", "", { autocomplete: "new-password" })]),
+        h("label", { style: "display:flex;gap:8px;align-items:center;color:inherit;font-size:1rem" }, [ownerChk, "ให้เป็นผู้ดูแลหลัก (เพิ่ม/ลบผู้ดูแลคนอื่นได้)"]),
+        h("div", { class: "row", style: "margin-top:12px" }, [h("button", { class: "primary", text: "+ เพิ่มผู้ดูแล", onclick: async function () {
+          if (await call("admin_add_admin", { p_user: $("a_user").value, p_password: $("a_pw").value, p_is_owner: ownerChk.checked }, "เพิ่มผู้ดูแลแล้ว")) loadAdmins();
+        } })])]) : null
+    ]));
+
+    box.appendChild(h("div", { class: "card", oninput: function () { settingsDirty = true; } }, [h("h2", { text: "เปลี่ยนรหัสผ่านของฉัน" }),
+      h("div", { class: "grid2" }, [f("s_np", "รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)", "password", "", { autocomplete: "new-password" })]),
+      h("div", { class: "row", style: "margin-top:12px" }, [h("button", { text: "เปลี่ยนรหัสผ่าน", onclick: async function () {
+        var r = await call("admin_change_password", { p_new: $("s_np").value });
+        if (r) { $("s_np").value = ""; toast("เปลี่ยนรหัสผ่านแล้ว"); }
+      } })])]));
+  }
+
+  function render() {
+    renderToday(); renderStats(); renderHistory(); renderMembers();
+    if (tab !== "settings" || !settingsDirty) renderSettings();
+  }
+  function setTab(t) {
+    tab = t;
+    [].forEach.call($("tabs").children, function (b) { b.classList.toggle("on", b.dataset.tab === t); });
+    ["today", "stats", "history", "members", "settings"].forEach(function (x) { $("tab-" + x).classList.toggle("hidden", x !== t); });
+  }
+  $("tabs").onclick = function (e) { if (e.target.dataset.tab) { setTab(e.target.dataset.tab); load(); } };
+  $("loginBtn").onclick = login;
+  $("pass").onkeydown = function (e) { if (e.key === "Enter") login(); };
+  $("logoutBtn").onclick = function () { logout(""); };
+  // รีเฟรชอัตโนมัติขณะดูหน้ารอบประชุมวันนี้
+  setInterval(function () {
+    var a = document.activeElement;
+    if ($("dlg").open) return;
+    if (pass && tab === "today" && !viewId && !document.hidden && !(a && /SELECT|INPUT|TEXTAREA/.test(a.tagName)) && $("previewCard") && $("previewCard").classList.contains("hidden")) load();
+    else if (pass && tab === "today" && !viewId && !document.hidden && !$("previewCard")) load();
+  }, 10000);
+
+  var saved = sessionStorage.getItem("mc_token");
+  if (saved) enter(saved);
+  else mcRpc("admin_needs_setup").then(function (v) { if (v === true) { needSetup = true; $("setupNote").classList.remove("hidden"); $("loginBtn").textContent = "สร้างผู้ดูแลหลัก"; } }).catch(function () {});
+})();
+</script>
+</body>
+</html>
