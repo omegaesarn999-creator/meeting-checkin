@@ -81,10 +81,11 @@
     <input type="password" id="pass" style="width:100%" autocomplete="current-password">
     <p class="muted hidden" id="setupNote" style="margin-top:10px">ระบบยังไม่มีผู้ดูแล — ตั้งชื่อผู้ใช้ (a-z, 0-9) และรหัสผ่าน (อย่างน้อย 8 ตัว) ของผู้ดูแลหลักคนแรก</p>
     <div class="row" style="margin-top:12px"><button class="primary" id="loginBtn">เข้าสู่ระบบ</button><span class="muted" id="loginMsg"></span></div>
+    <p style="margin:14px 0 0"><a href="guide.html" target="_blank" rel="noopener" style="color:var(--brand)">📖 คู่มือการใช้งาน</a></p>
   </section>
 
   <div id="app" class="hidden">
-    <div class="row" style="justify-content:space-between"><h1 id="title">เช็คอินประชุม</h1><button class="small" id="logoutBtn">ออกจากระบบ</button></div>
+    <div class="row" style="justify-content:space-between"><h1 id="title">เช็คอินประชุม</h1><span class="row"><a href="guide.html" target="_blank" rel="noopener" style="font-weight:600;color:var(--brand)">📖 คู่มือการใช้งาน</a><button class="small" id="logoutBtn">ออกจากระบบ</button></span></div>
     <div class="tabs" id="tabs">
       <button data-tab="today" class="on">วันนี้</button>
       <button data-tab="stats">สรุปสะสม</button>
