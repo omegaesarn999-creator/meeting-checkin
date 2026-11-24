@@ -108,7 +108,7 @@
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var TZ = "Asia/Bangkok", pass = null, D = null, A = null, needSetup = false, viewId = null, tab = "today", settingsDirty = false;
+  var TZ = "Asia/Bangkok", pass = null, D = null, A = null, W = null, needSetup = false, viewId = null, tab = "today", settingsDirty = false;
   var ST = { ontime: "ตรงเวลา", late: "สาย", absent: "ขาด", excused: "ลา" };
 
   function h(tag, attrs, kids) {
@@ -161,17 +161,18 @@
   async function load() {
     var r = await call("admin_dashboard", { p_meeting_id: viewId });
     if (!r) return false;
+    if (!W || tab === "settings") { var w = await call("admin_warnings"); if (w) W = w; }
     D = r; $("title").textContent = D.settings.org_name; render(); return true;
   }
   function logout(msg) {
     if (pass) mcRpc("admin_logout", { p_pass: pass }).catch(function () {});
-    pass = null; A = null; sessionStorage.removeItem("mc_token"); if ($("dlg").open) $("dlg").close();
+    pass = null; A = null; W = null; sessionStorage.removeItem("mc_token"); if ($("dlg").open) $("dlg").close();
     $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("loginMsg").textContent = msg === "รหัสผ่านไม่ถูกต้อง" ? "หมดเวลาเข้าสู่ระบบ กรุณาเข้าใหม่" : (msg || "");
   }
   // pass = โทเคนเข้าสู่ระบบ (อายุ 12 ชั่วโมง) ไม่ได้เก็บรหัสผ่านจริงไว้ในเครื่อง
   async function enter(token) {
     pass = token;
-    try { D = await mcRpc("admin_dashboard", { p_pass: pass, p_meeting_id: null }); A = await mcRpc("admin_list_admins", { p_pass: pass }); }
+    try { D = await mcRpc("admin_dashboard", { p_pass: pass, p_meeting_id: null }); A = await mcRpc("admin_list_admins", { p_pass: pass }); W = await mcRpc("admin_warnings", { p_pass: pass }); }
     catch (e) { pass = null; sessionStorage.removeItem("mc_token"); $("loginMsg").textContent = e.message === "bad_password" ? "กรุณาเข้าสู่ระบบ" : e.message; return; }
     sessionStorage.setItem("mc_token", pass);
     $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("loginMsg").textContent = ""; $("pass").value = "";
@@ -269,7 +270,7 @@
     if (open && !m.opened_at) head.appendChild(h("button", { class: "big go", text: "▶ เปิดประชุม (หลังจากนี้นับเป็นมาสาย)", onclick: function () { if (confirm("ยืนยันเปิดประชุมตอนนี้?\nคนที่สแกนหลังจากนี้จะนับเป็นมาสาย")) act("admin_open_meeting", {}, "เปิดประชุมแล้ว"); } }));
     var actions = h("div", { class: "row", style: "margin-top:12px" });
     if (open && m.opened_at) actions.appendChild(h("button", { class: "small", text: "ยกเลิกการกดเปิดประชุม", onclick: function () { if (confirm("ยกเลิกการกดเปิดประชุม และคำนวณสถานะสายใหม่?")) act("admin_undo_open", { p_meeting_id: m.id }, "ยกเลิกแล้ว"); } }));
-    if (open) actions.appendChild(h("button", { text: "ปิดรอบและส่งรายงานตอนนี้", onclick: async function () { if (confirm("ปิดรอบตอนนี้?\nคนที่ยังไม่เช็คอินจะถูกบันทึกเป็น “ขาด” และส่งรายงานเข้า LINE")) watchLine(await act("admin_finalize", { p_meeting_id: m.id, p_send: true }, "ปิดรอบแล้ว")); } }));
+    if (open) actions.appendChild(h("button", { text: "ปิดรอบและส่งรายงานตอนนี้", onclick: async function () { if (confirm("ปิดรอบตอนนี้?\nคนที่ยังไม่เช็คอินจะถูกบันทึกเป็น “ขาด” และส่งรายงานพร้อมจดหมายเตือนเข้า LINE")) watchLine(await act("admin_finalize", { p_meeting_id: m.id, p_send: true }, "ปิดรอบแล้ว")); } }));
     if (!open) actions.appendChild(h("button", { text: "ส่งรายงานเข้า LINE อีกครั้ง", onclick: async function () { watchLine(await act("admin_send_report", { p_meeting_id: m.id })); } }));
     actions.appendChild(h("button", { text: "ดูตัวอย่างรายงาน", onclick: async function () { var t = await call("admin_report_preview", { p_meeting_id: m.id }); if (t) { $("preview").textContent = t; $("previewCard").classList.remove("hidden"); } } }));
     actions.appendChild(h("button", { class: "small danger", text: "ลบรอบนี้", onclick: function () { if (confirm("ลบรอบประชุมนี้พร้อมข้อมูลเช็คอินทั้งหมดของรอบ?\nการลบย้อนกลับไม่ได้")) { var id = m.id; viewId = null; act("admin_delete_meeting", { p_meeting_id: id }, "ลบแล้ว"); } } }));
@@ -448,6 +449,30 @@
         h("button", { class: "primary", text: "บันทึก LINE", onclick: function () { act("admin_save_settings", { p: { line_token: $("s_tok").value, line_secret: $("s_sec").value } }, "บันทึกแล้ว"); } }),
         h("button", { text: "ส่งข้อความทดสอบ", onclick: async function () { watchLine(await call("admin_line_test")); } })])
     ]));
+
+    if (W) {
+      var wOn = h("input", { id: "w_on", type: "checkbox" }); wOn.checked = W.enabled;
+      var wta = function (n, label) { var t = h("textarea", { id: "w_" + n, style: "width:100%;min-height:190px" }); t.value = W["warn_" + n]; return h("div", {}, [h("label", { for: "w_" + n, text: label }), t]); };
+      box.appendChild(h("div", { class: "card", oninput: function () { settingsDirty = true; } }, [
+        h("h2", { text: "จดหมายเตือนขาดประชุม (ส่งเข้ากลุ่ม LINE)" }),
+        h("p", { class: "muted", text: "เมื่อปิดรอบ ระบบจะออกจดหมายให้คนที่ยอด “ขาดรวม” ขยับขึ้นในรอบนั้น (ขาด หรือสายครบ " + s.late_per_absence + " ครั้ง) — ขาดรวม 1 = ฉบับที่ 1, 2 = ฉบับที่ 2, 3 ขึ้นไป = ฉบับที่ 3 แต่ละฉบับออกครั้งเดียวต่อคน และส่งไปพร้อมรายงานสรุป" }),
+        h("label", { style: "display:flex;gap:8px;align-items:center;color:inherit;font-size:1rem" }, [wOn, "เปิดใช้จดหมายเตือนอัตโนมัติ"]),
+        h("p", { class: "muted", text: "คำที่ระบบเติมให้: {ชื่อ} {ครั้ง} = ขาดรวม · {ขาด} = ขาดจริง · {สาย} = สายสะสม · {เกณฑ์} · {วันที่} · {ชื่อประชุม}" }),
+        wta(1, "ฉบับที่ 1 — ขาดครั้งที่ 1"), wta(2, "ฉบับที่ 2 — ขาดครั้งที่ 2"), wta(3, "ฉบับที่ 3 — ขาดครั้งที่ 3 (ฉบับสุดท้าย)"),
+        h("div", { class: "row", style: "margin-top:12px" }, [h("button", { class: "primary", text: "บันทึกจดหมาย", onclick: function () { act("admin_save_warnings", { p: { enabled: $("w_on").checked, warn_1: $("w_1").value, warn_2: $("w_2").value, warn_3: $("w_3").value } }, "บันทึกแล้ว"); } })]),
+        h("h3", { text: "จดหมายที่ออกแล้ว (" + W.list.length + ")" }),
+        W.list.length ? h("div", { class: "tablewrap" }, [h("table", {}, [
+          h("thead", {}, [h("tr", {}, ["ชื่อ", "ฉบับที่", "รอบประชุม", "สถานะ", ""].map(function (t) { return h("th", { text: t }); }))]),
+          h("tbody", {}, W.list.map(function (x) {
+            return h("tr", {}, [h("td", { text: x.name }), h("td", { text: String(x.level) }), h("td", { text: x.date_text || "-" }),
+              h("td", { text: x.sent_at ? "ส่งแล้ว " + new Date(x.sent_at).toLocaleDateString("th-TH", { timeZone: TZ, dateStyle: "medium" }) : "ยังไม่ได้ส่ง" }),
+              h("td", {}, [h("div", { class: "row" }, [
+                h("button", { class: "small", text: "อ่าน", onclick: function () { var d = $("dlg"); d.textContent = ""; d.appendChild(h("div", {}, [h("pre", { text: x.body, style: "white-space:pre-wrap" }), h("button", { text: "ปิด", onclick: function () { d.close(); } })])); d.showModal(); } }),
+                h("button", { class: "small", text: x.sent_at ? "ส่งอีกครั้ง" : "ส่งเข้า LINE", onclick: async function () { if (confirm("ส่งจดหมายฉบับที่ " + x.level + " ของ " + x.name + " เข้ากลุ่ม LINE?")) watchLine(await act("admin_send_warning", { p_id: x.id })); } }),
+                h("button", { class: "small danger", text: "ลบ", onclick: function () { if (confirm("ลบจดหมายฉบับนี้? (ถ้ายังเข้าเงื่อนไข ระบบอาจออกใหม่เมื่อปิดรอบครั้งถัดไป)")) act("admin_delete_warning", { p_id: x.id }, "ลบแล้ว"); } })])])]);
+          }))])]) : h("p", { class: "muted", text: "ยังไม่มีจดหมายเตือน" })
+      ]));
+    }
 
     var me = (A && A.me) || {}, admins = (A && A.admins) || [];
     var ownerChk = h("input", { id: "a_owner", type: "checkbox" });
