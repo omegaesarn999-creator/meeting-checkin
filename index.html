@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>เช็คอินประชุม</title>
+<style>
+  :root { --ink:#14213d; --muted:#5b6478; --line:#dfe3ec; --bg:#f3f5fa; --card:#fff;
+          --brand:#1f4fd8; --ok:#0f8a4f; --okbg:#e3f6ec; --late:#b45309; --latebg:#fef3c7; --bad:#b42318; --badbg:#fde8e6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Noto Sans Thai","Leelawadee UI","Sukhumvit Set",Tahoma,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  main { max-width:460px; margin:0 auto; padding:20px 16px 40px; }
+  header { text-align:center; padding:12px 0 18px; }
+  header h1 { font-size:1.25rem; margin:0 0 2px; }
+  header .date { color:var(--muted); font-size:.95rem; }
+  #clock { font-size:2.6rem; font-weight:700; letter-spacing:.02em; font-variant-numeric:tabular-nums; margin-top:6px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:14px; }
+  .hidden { display:none !important; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:12px; padding:14px 18px; font-weight:600; font-size:1.05rem; }
+  .primary { background:var(--brand); color:#fff; width:100%; }
+  .primary:disabled { opacity:.55; }
+  .ghost { background:#eef1f8; color:var(--ink); width:100%; margin-top:10px; }
+  input[type=search] { width:100%; font:inherit; padding:12px 14px; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; }
+  .names { max-height:46vh; overflow:auto; border:1px solid var(--line); border-radius:12px; }
+  .names button { display:block; width:100%; text-align:left; background:#fff; border-radius:0; border-bottom:1px solid var(--line); font-weight:500; padding:13px 14px; }
+  .names button:last-child { border-bottom:0; }
+  .names button:active { background:#eef1f8; }
+  .result { text-align:center; border-width:2px; }
+  .result .icon { font-size:3rem; line-height:1; }
+  .result h2 { margin:8px 0 4px; font-size:1.5rem; }
+  .result .big { font-size:2.2rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .result.ok { background:var(--okbg); border-color:var(--ok); color:#0a5c35; }
+  .result.late { background:var(--latebg); border-color:#d97706; color:#7c3a06; }
+  .result.bad { background:var(--badbg); border-color:var(--bad); color:#7a1710; }
+  .note { color:var(--muted); font-size:.9rem; text-align:center; }
+  .who { text-align:center; margin-bottom:14px; }
+  .who b { font-size:1.2rem; }
+  h3 { margin:0 0 10px; font-size:1.05rem; }
+  .spinner { width:34px; height:34px; border:4px solid #d5dbea; border-top-color:var(--brand); border-radius:50%; margin:6px auto 12px; animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="org">เช็คอินประชุม</h1>
+    <div class="date" id="date">&nbsp;</div>
+    <div id="clock">--:--:--</div>
+  </header>
+
+  <section id="loading" class="card"><div class="spinner"></div><div class="note" id="loadingText">กำลังโหลด…</div></section>
+
+  <section id="pick" class="card hidden">
+    <h3>เลือกชื่อของคุณ (ครั้งแรกครั้งเดียว)</h3>
+    <input type="search" id="q" placeholder="พิมพ์ค้นหาชื่อ" autocomplete="off">
+    <div class="names" id="names"></div>
+    <p class="note">ชื่อจะผูกกับมือถือเครื่องนี้ ครั้งต่อไปสแกนแล้วเช็คอินได้ทันที</p>
+  </section>
+
+  <section id="confirm" class="card hidden">
+    <div class="who">ยืนยันว่าคุณคือ<br><b id="confirmName"></b></div>
+    <button class="primary" id="confirmBtn">ใช่ เช็คอินเลย</button>
+    <button class="ghost" id="backBtn">ไม่ใช่ เลือกใหม่</button>
+  </section>
+
+  <section id="ready" class="card hidden">
+    <div class="who">สวัสดี <b id="meName"></b></div>
+    <button class="primary" id="checkBtn">เช็คอิน</button>
+  </section>
+
+  <section id="result" class="card result hidden">
+    <div class="icon" id="rIcon"></div>
+    <h2 id="rTitle"></h2>
+    <div class="big" id="rBig"></div>
+    <div id="rText"></div>
+  </section>
+  <button class="ghost hidden" id="retryBtn">ลองอีกครั้ง</button>
+</main>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var TZ = "Asia/Bangkok";
+  var device, state, pickedId = null, offset = 0, pos = null;
+
+  function getDevice() {
+    var k = "mc_device", v = null;
+    try { v = localStorage.getItem(k); } catch (e) {}
+    if (!v) {
+      v = (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), function (b) { return ("0" + b.toString(16)).slice(-2); }).join(""));
+      try { localStorage.setItem(k, v); } catch (e) {}
+    }
+    return v;
+  }
+  function hhmm(iso) { return new Date(iso).toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false }); }
+  function show(id) {
+    ["loading", "pick", "confirm", "ready", "result"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
+    $("retryBtn").classList.add("hidden");
+  }
+  function result(kind, icon, title, big, text, retry) {
+    show("result");
+    $("result").className = "card result " + kind;
+    $("rIcon").textContent = icon; $("rTitle").textContent = title; $("rBig").textContent = big || ""; $("rText").textContent = text || "";
+    $("retryBtn").classList.toggle("hidden", !retry);
+  }
+  function showCheckin(c, name) {
+    var t = hhmm(c.checked_at || new Date());
+    if (c.status === "ontime") result("ok", "✅", "เช็คอินสำเร็จ — ตรงเวลา", t + " น.", name + (c.rank ? " · มาเป็นคนที่ " + c.rank : "") + (c.rank && c.rank <= 3 ? " 🏆" : ""));
+    else if (c.status === "late") result("late", "⏰", "เช็คอินแล้ว — มาสาย", c.checked_at ? t + " น." : "", name + (c.late_minutes ? " · สาย " + c.late_minutes + " นาที" : ""));
+    else if (c.status === "excused") result("ok", "📝", "บันทึกเป็นลา", "", name);
+    else result("bad", "❌", "บันทึกเป็นขาดประชุม", "", name + " · หากไม่ถูกต้องกรุณาแจ้งผู้ดูแล");
+  }
+  function renderNames() {
+    var q = $("q").value.trim().toLowerCase(), box = $("names");
+    box.textContent = "";
+    (state.members || []).filter(function (m) { return !q || m.name.toLowerCase().indexOf(q) >= 0; }).forEach(function (m) {
+      var b = document.createElement("button");
+      b.textContent = m.name;
+      b.onclick = function () { pickedId = m.id; $("confirmName").textContent = m.name; show("confirm"); };
+      box.appendChild(b);
+    });
+    if (!box.children.length) { var d = document.createElement("div"); d.className = "note"; d.style.padding = "14px"; d.textContent = "ไม่พบชื่อ — หากชื่อคุณหายไป อาจถูกผูกกับเครื่องอื่นแล้ว กรุณาแจ้งผู้ดูแล"; box.appendChild(d); }
+  }
+
+  function locate() {
+    return new Promise(function (resolve, reject) {
+      if (!navigator.geolocation) return reject({ code: 0 });
+      navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    });
+  }
+
+  async function doCheckin() {
+    show("loading");
+    try {
+      var lat = null, lng = null;
+      if (state.needs_location) {
+        $("loadingText").textContent = "กำลังตรวจสอบตำแหน่ง… (กรุณากด “อนุญาต”)";
+        try {
+          if (!pos || Date.now() - pos.t > 60000) { var p = await locate(); pos = { lat: p.coords.latitude, lng: p.coords.longitude, t: Date.now() }; }
+          lat = pos.lat; lng = pos.lng;
+        }
+        catch (e) {
+          return result("bad", "📍", "ไม่ได้รับตำแหน่ง", "", e.code === 1
+            ? "กรุณาอนุญาตให้เข้าถึงตำแหน่ง (Location) ในการตั้งค่าเบราว์เซอร์ แล้วลองอีกครั้ง"
+            : "เปิด GPS แล้วลองอีกครั้ง", true);
+        }
+      }
+      $("loadingText").textContent = "กำลังบันทึก…";
+      var r = await mcRpc("check_in", { p_device: device, p_member_id: pickedId, p_lat: lat, p_lng: lng });
+      if (r.ok) return showCheckin(r, r.name);
+      var E = {
+        no_meeting: ["📅", "วันนี้ไม่มีประชุม", "", false],
+        closed: ["🔒", "ปิดรับเช็คอินแล้ว", "เลยเวลาเช็คอินของวันนี้ ระบบบันทึกเป็นขาดประชุม", false],
+        too_early: ["🌙", "ยังไม่เปิดให้เช็คอิน", "เริ่มเช็คอินได้ตั้งแต่ " + (r.open_time || "") + " น.", true],
+        no_location: ["📍", "ไม่ได้รับตำแหน่ง", "เปิด GPS แล้วลองอีกครั้ง", true],
+        too_far: ["📍", "อยู่นอกพื้นที่ประชุม", "คุณอยู่ห่างจุดประชุมประมาณ " + (r.distance >= 1000 ? (r.distance / 1000).toFixed(1) + " กม." : r.distance + " ม.") + " (ต้องอยู่ภายใน " + (r.radius >= 1000 ? r.radius / 1000 + " กม." : r.radius + " ม.") + ")", true],
+        bound_other: ["📱", "ชื่อนี้ผูกกับมือถือเครื่องอื่นแล้ว", "หากเปลี่ยนเครื่อง กรุณาแจ้งผู้ดูแลให้รีเซ็ต", false],
+        inactive: ["🚫", "บัญชีถูกปิดใช้งาน", "กรุณาติดต่อผู้ดูแล", false],
+        pick_member: ["👤", "กรุณาเลือกชื่อ", "", true]
+      }[r.error] || ["⚠️", "เกิดข้อผิดพลาด", r.error || "", true];
+      result("bad", E[0], E[1], "", E[2], E[3]);
+    } catch (e) {
+      result("bad", "⚠️", "เชื่อมต่อไม่สำเร็จ", "", "ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง", true);
+    }
+  }
+
+  async function init() {
+    show("loading"); $("loadingText").textContent = "กำลังโหลด…";
+    try {
+      state = await mcRpc("get_state", { p_device: device });
+    } catch (e) { return result("bad", "⚠️", "เชื่อมต่อไม่สำเร็จ", "", "ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง", true); }
+    offset = new Date(state.now).getTime() - Date.now();
+    $("org").textContent = state.org_name; document.title = "เช็คอิน " + state.org_name;
+    $("date").textContent = "วัน" + state.date_text + " · เริ่มประชุม " + state.start_time + " น.";
+    if (state.checkin) return showCheckin(state.checkin, state.me.name);
+    if (state.status === "no_meeting") return result("bad", "📅", "วันนี้ไม่มีประชุม", "", "");
+    if (state.status === "closed") return result("bad", "🔒", "ปิดรับเช็คอินแล้ว", "", "เลยเวลาเช็คอินของวันนี้");
+    if (state.status === "too_early") return result("late", "🌙", "ยังไม่เปิดให้เช็คอิน", "", "เริ่มเช็คอินได้ตั้งแต่ " + state.open_time + " น.", true);
+    if (state.me) {
+      if (!state.me.active) return result("bad", "🚫", "บัญชีถูกปิดใช้งาน", "", "กรุณาติดต่อผู้ดูแล");
+      $("meName").textContent = state.me.name;
+      show("ready");
+      doCheckin(); // สแกนแล้วเช็คอินทันที
+    } else {
+      // ครั้งแรก: ต้องอยู่ในพื้นที่ประชุมก่อน จึงจะเห็นรายชื่อให้เลือก
+      if (state.near === null) {
+        $("loadingText").textContent = "กำลังตรวจสอบตำแหน่ง… (กรุณากด “อนุญาต”)";
+        try {
+          var p = await locate(); pos = { lat: p.coords.latitude, lng: p.coords.longitude, t: Date.now() };
+          state = await mcRpc("get_state", { p_device: device, p_lat: pos.lat, p_lng: pos.lng });
+        } catch (e) {
+          return result("bad", "📍", "ไม่ได้รับตำแหน่ง", "", e && e.code === 1
+            ? "กรุณาอนุญาตให้เข้าถึงตำแหน่ง (Location) ในการตั้งค่าเบราว์เซอร์ แล้วลองอีกครั้ง"
+            : "เปิด GPS และตรวจสอบอินเทอร์เน็ต แล้วลองอีกครั้ง", true);
+        }
+      }
+      if (state.near === false) {
+        pos = null;
+        return result("bad", "📍", "อยู่นอกพื้นที่ประชุม", "", "คุณอยู่ห่างจุดประชุมประมาณ " + (state.distance >= 1000 ? (state.distance / 1000).toFixed(1) + " กม." : state.distance + " ม.") + " (ต้องอยู่ภายใน " + (state.radius >= 1000 ? state.radius / 1000 + " กม." : state.radius + " ม.") + ")", true);
+      }
+      renderNames(); show("pick");
+    }
+  }
+
+  setInterval(function () {
+    $("clock").textContent = new Date(Date.now() + offset).toLocaleTimeString("th-TH", { timeZone: TZ, hour12: false });
+  }, 500);
+  $("q").oninput = renderNames;
+  $("confirmBtn").onclick = doCheckin;
+  $("backBtn").onclick = function () { pickedId = null; show("pick"); };
+  $("checkBtn").onclick = doCheckin;
+  $("retryBtn").onclick = function () { pos = null; if (state && (state.me || pickedId) && state.status === "open") doCheckin(); else init(); };
+
+  device = getDevice();
+  init();
+})();
+</script>
+</body>
+</html>
