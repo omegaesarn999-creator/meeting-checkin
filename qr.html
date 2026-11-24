@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>QR Code เช็คอินประชุม</title>
+<style>
+  body { margin:0; font-family:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif; color:#14213d; background:#f3f5fa; text-align:center; }
+  .sheet { max-width:640px; margin:24px auto; background:#fff; border:1px solid #dfe3ec; border-radius:18px; padding:32px 24px; }
+  h1 { font-size:2rem; margin:0 0 4px; }
+  .sub { font-size:1.15rem; color:#5b6478; margin:0 0 18px; }
+  #qr svg { width:min(420px, 86vw); height:auto; }
+  ol { text-align:left; display:inline-block; font-size:1.1rem; line-height:1.8; margin:16px 0 0; padding-left:24px; }
+  .url { color:#5b6478; font-size:.85rem; word-break:break-all; margin-top:14px; }
+  button { font:inherit; font-weight:600; margin:18px 0; padding:12px 22px; border-radius:12px; border:0; background:#1f4fd8; color:#fff; cursor:pointer; }
+  @media print { body { background:#fff; } .sheet { border:0; margin:0 auto; } button { display:none; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>สแกนเพื่อเช็คอินประชุม</h1>
+  <p class="sub">BNI Empower · เริ่มประชุม 07:00 น.</p>
+  <div id="qr"></div>
+  <ol>
+    <li>เปิด LINE แล้วเข้าโหมดสแกน QR code (หรือใช้กล้องมือถือ)</li>
+    <li>กด “อนุญาต” ให้ใช้ตำแหน่ง</li>
+    <li>ครั้งแรกเลือกชื่อของตัวเอง ครั้งต่อไปสแกนแล้วเช็คอินทันที</li>
+  </ol>
+  <div class="url" id="url"></div>
+</div>
+<button onclick="window.print()">🖨 พิมพ์ QR Code</button>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+  var url = location.href.replace(/qr\.html.*$/, "") + "?openExternalBrowser=1";
+  var q = qrcode(0, "M"); q.addData(url); q.make();
+  document.getElementById("qr").innerHTML = q.createSvgTag({ cellSize: 10, margin: 4, scalable: true });
+  document.getElementById("url").textContent = url;
+</script>
+</body>
+</html>
